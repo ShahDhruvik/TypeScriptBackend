@@ -22,34 +22,33 @@ const registerUser = async (req: Request, res: Response, next: NextFunction) => 
         });
 
         await user.save();
-        res.status(201).send('created');
+        res.sendStatus(201).json({ message: 'created' });
     } catch (error) {
-        res.status(400).send(error);
+        res.sendStatus(400).json(error);
     }
 };
 
 const loginUser = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { username, email, password } = req.body;
-        const user = await User.find({
-            email: email
+        const { email, password } = req.body;
+        const user = await User.findOne({
+            email
         });
-        console.log(user);
-
-        // if (user) {
-        //     bcrypt.compare(password, user.password, (err: Error, result: any) => {
-        //         if (err) {
-        //             res.send('password does not match');
-        //         }
-        //         const token = jwt.sign({ name: username, email }, 'verysecretkry', { expiresIn: '500s' });
-        //         if (result) {
-        //             res.send(token);
-        //         }
-        //     });
-        // }
-        res.send('user not found');
+        if (user) {
+            await bcrypt.compare(password, user.password, (err: Error, result: any) => {
+                if (err) {
+                    res.send(err);
+                }
+                if (result) {
+                    const token = jwt.sign({ email: user.email }, 'verysecretkry', { expiresIn: '500s' });
+                    res.send({ message: 'Login successful', token });
+                } else {
+                    res.send({ message: 'Password does not match' });
+                }
+            });
+        } else res.send({ message: 'user not found' });
     } catch (error) {
-        res.status(400).send(error);
+        res.send(error).status(400);
     }
 };
 
